@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#2c3e50">
+    <meta name="description" content="Flip Book PWA - Libros interactivos con hojas que se voltean">
+    <title>Flip Book - Un regalo que no hace ruido</title>
+    <link rel="manifest" href="manifest.json">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='75' font-size='75'>📖</text></svg>">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Playfair Display', 'Lora', serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .flipbook-container {
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            overflow: hidden;
+            max-width: 900px;
+            width: 100%;
+        }
+
+        .flipbook {
+            perspective: 1000px;
+            height: 600px;
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: #f5f5f5;
+        }
+
+        .page {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            display: none;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding: 60px 40px;
+            text-align: center;
+            animation: fadeIn 0.5s ease-in;
+        }
+
+        .page.active {
+            display: flex;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        .page h1 {
+            font-size: 2.5em;
+            color: #2c3e50;
+            margin-bottom: 30px;
+            font-weight: 700;
+        }
+
+        .page p {
+            font-size: 1.3em;
+            color: #555;
+            line-height: 1.8;
+            margin-bottom: 40px;
+            font-style: italic;
+        }
+
+        .page img {
+            max-width: 80%;
+            max-height: 400px;
+            margin-top: 30px;
+            border-radius: 10px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+
+        .controls {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 20px 40px;
+            background: #f9f9f9;
+            border-top: 1px solid #eee;
+        }
+
+        button {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 12px 25px;
+            border-radius: 25px;
+            font-size: 1em;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-weight: bold;
+        }
+
+        button:hover {
+            background: #764ba2;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        }
+
+        button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .page-counter {
+            font-size: 1.1em;
+            color: #666;
+            font-weight: bold;
+        }
+
+        .share-btn {
+            background: #27ae60;
+        }
+
+        .share-btn:hover {
+            background: #229954;
+        }
+
+        @media (max-width: 768px) {
+            .flipbook {
+                height: 400px;
+            }
+            .page {
+                padding: 40px 20px;
+            }
+            .page h1 {
+                font-size: 1.8em;
+            }
+            .page p {
+                font-size: 1.1em;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="flipbook-container">
+        <div class="flipbook" id="flipbook">
+            <!-- Las páginas se cargan dinámicamente aquí -->
+        </div>
+        <div class="controls">
+            <button id="prevBtn" onclick="previousPage()">← Anterior</button>
+            <div class="page-counter">
+                <span id="currentPage">1</span> / <span id="totalPages">1</span>
+            </div>
+            <button id="nextBtn" onclick="nextPage()">Siguiente →</button>
+            <button class="share-btn" onclick="shareBook()">Compartir</button>
+        </div>
+    </div>
+
+    <script>
+        let currentPage = 0;
+        const pages = [
+            {
+                title: "Un regalo que no hace ruido",
+                text: "Para Pilar, de Carlos",
+                image: null
+            },
+            {
+                title: "",
+                text: "Viven cerca del mar.",
+                image: null
+            },
+            {
+                title: "",
+                text: "Tan cerca,\nque el día empieza con luz\ny no con relojes.",
+                image: null
+            },
+            {
+                title: "",
+                text: "Pilar sabe cuidar\nsin hacer ruido.",
+                image: null
+            },
+            {
+                title: "",
+                text: "Piensa en los otros\nantes de que los otros\nse den cuenta.",
+                image: null
+            },
+            {
+                title: "",
+                text: "Mónica camina\na su propio ritmo.",
+                image: null
+            },
+            {
+                title: "",
+                text: "Pinta.\nRespira.\nObserva.",
+                image: null
+            },
+            {
+                title: "",
+                text: "Está\nmás allá del bien",
+                image: null
+            },
+            {
+                title: "",
+                text: "Se conectan todos por video\npara saludarse, para Navidad.\nCon el resto de la gran familia.",
+                image: null
+            },
+            {
+                title: "Fin",
+                text: "Ilustraciones: Mónica Vergara\nDiagramación: Carlos Vergara\nTecnología: PWA Flip Book",
+                image: null
+            }
+        ];
+
+        function renderPage() {
+            const flipbook = document.getElementById('flipbook');
+            flipbook.innerHTML = '';
+            const page = pages[currentPage];
+            
+            const pageDiv = document.createElement('div');
+            pageDiv.className = 'page active';
+            
+            let content = '';
+            if (page.title) {
+                content += `<h1>${page.title}</h1>`;
+            }
+            content += `<p>${page.text.replace(/\n/g, '<br>')}</p>`;
+            if (page.image) {
+                content += `<img src="${page.image}" alt="Ilustración">`;
+            }
+            
+            pageDiv.innerHTML = content;
+            flipbook.appendChild(pageDiv);
+
+            document.getElementById('currentPage').textContent = currentPage + 1;
+            document.getElementById('totalPages').textContent = pages.length;
+            document.getElementById('prevBtn').disabled = currentPage === 0;
+            document.getElementById('nextBtn').disabled = currentPage === pages.length - 1;
+        }
+
+        function nextPage() {
+            if (currentPage < pages.length - 1) {
+                currentPage++;
+                renderPage();
+            }
+        }
+
+        function previousPage() {
+            if (currentPage > 0) {
+                currentPage--;
+                renderPage();
+            }
+        }
+
+        function shareBook() {
+            const url = window.location.href;
+            if (navigator.share) {
+                navigator.share({
+                    title: 'Un regalo que no hace ruido',
+                    text: 'Libro interactivo creado con PWA Flip Book',
+                    url: url
+                });
+            } else {
+                alert('Enlace para compartir: ' + url);
+            }
+        }
+
+        // Service Worker Registration
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('sw.js').then(reg => {
+                console.log('Service Worker registrado');
+            }).catch(err => {
+                console.log('Error registrando Service Worker', err);
+            });
+        }
+
+        // Keyboard Navigation
+        document.addEventListener('keydown', e => {
+            if (e.key === 'ArrowRight') nextPage();
+            if (e.key === 'ArrowLeft') previousPage();
+        });
+
+        renderPage();
+    </script>
+</body>
+</html>
